@@ -1,9 +1,11 @@
-use logos::{Logos, Lexer};
+use logos::{Lexer, Logos};
+
+use super::report_lex_error;
 
 #[derive(Debug, Clone)]
-pub struct Tokens(pub(crate) Vec<Token>);
+pub(crate) struct Tokens(pub(crate) Vec<Token>);
 
-pub fn lex(input: String) -> Tokens {
+pub(crate) fn lex(input: String) -> Tokens {
     let mut l = Token::lexer(input.as_str()).into_iter().collect::<Vec<_>>();
 
     let mut error_idx = Vec::new();
@@ -14,17 +16,19 @@ pub fn lex(input: String) -> Tokens {
         }
     }
 
-    (!error_idx.is_empty()).then(|| report_error(error_idx, &input));
+    (!error_idx.is_empty()).then(|| error_idx.iter().for_each(|e| report_lex_error(&input, *e)));
+    (!error_idx.is_empty()).then(|| std::process::exit(1));
 
-    Tokens(l.iter().filter(|&&x| x != Token::Skip).map(|x| *x).collect::<Vec<_>>())
-}
-
-fn report_error(_idx: Vec<usize>, _input: &String) {
-    unimplemented!()
+    Tokens(
+        l.iter()
+            .filter(|&&x| x != Token::Skip)
+            .map(|x| *x)
+            .collect::<Vec<_>>(),
+    )
 }
 
 #[derive(Logos, Debug, PartialEq, Clone, Copy)]
-pub enum Token {
+pub(crate) enum Token {
     #[token("<")]
     ShiftLeft,
 
@@ -53,5 +57,5 @@ pub enum Token {
     Skip,
 
     #[error]
-    Error
+    Error,
 }

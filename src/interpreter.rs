@@ -1,6 +1,7 @@
 use std::io::stdin;
 
-use super::lexer::{Token, Tokens};
+use super::lexer::{Token, Tokens, lex};
+use super::report_error;
 use super::DEFAULT_CELL_COUNT;
 
 pub type InterpreterResult = Result<(), (&'static str, usize)>;
@@ -9,6 +10,7 @@ pub type InterpreterResult = Result<(), (&'static str, usize)>;
 pub struct Interpreter {
     tokens: Tokens,
     loops: Vec<(usize, usize)>,
+    code: String,
 
     /// Memory
     cells: Vec<u8>,
@@ -19,33 +21,35 @@ pub struct Interpreter {
 
 impl Interpreter {
     /// Creates a new instance of Interpreter, cell count is: DEFAULT_CELL_COUNT
-    pub fn new(tokens: Tokens) -> Self {
+    pub fn new(code: &str) -> Self {
         let mut v = Vec::with_capacity(DEFAULT_CELL_COUNT);
         v.resize(v.capacity(), 0);
 
         Self {
-            tokens,
+            tokens: lex(code.to_string()),
             cells: v,
+            code: code.to_string(),
             ptr: 0,
             loops: Vec::new()
         }
     }
 
     /// cells with custom capacity
-    pub fn with_cells(tokens: Tokens, cell_count: usize) -> Self {
+    pub fn with_cells(code: &str, cell_count: usize) -> Self {
         let mut v = Vec::with_capacity(cell_count);
         v.resize(cell_count, 0);
 
         Self {
-            tokens,
+            tokens: lex(code.to_string()),
             cells: v,
+            code: code.to_string(),
             ptr: 0,
             loops: Vec::new()
         }
     }
 
     /// execute the code
-    pub fn interpret(&mut self) -> InterpreterResult {
+    pub fn interpret(&mut self) {
         let mut idx = 0usize;
         while idx < self.tokens.0.len() {
             let res = match self.tokens.0[idx] {
@@ -62,12 +66,16 @@ impl Interpreter {
                 _ => unreachable!()
             };
 
-            if res.is_err() { return Err(res.unwrap_err()); }
+            if res.is_err() {
+                let error = res.unwrap_err();
+                let error_msg = error.0;
+                let error_char_index = error.1;
+
+                report_error(error_msg, &self.code, error_char_index);
+            }
 
             idx += 1;
         }
-
-        Ok(())
     }
 
     /// <

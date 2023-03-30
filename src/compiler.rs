@@ -1,11 +1,11 @@
 use std::{fs, io::Write};
 
-use super::lexer::{Token, Tokens};
+use super::lexer::{Token, Tokens, lex};
 use super::DEFAULT_CELL_COUNT;
 
 #[derive(Debug, Clone)]
 pub struct Compiler {
-    tokens: Vec<(Token, u8)>,
+    tokens: Vec<(Token, u32)>,
     cell_count: usize,
     loop_idx: usize, // required to give names to the loop labels
     compiled_source: String,
@@ -13,9 +13,9 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    pub fn new(tokens: Tokens) -> Self {
+    pub fn new(code: &str) -> Self {
         Self {
-            tokens: Self::preprocess_tokens(tokens),
+            tokens: Self::preprocess_tokens(lex(code.to_string())),
             compiled_source: Self::init(DEFAULT_CELL_COUNT),
             cell_count: DEFAULT_CELL_COUNT,
             loop_idx: 0,
@@ -23,9 +23,9 @@ impl Compiler {
         }
     }
 
-    pub fn with_cells(tokens: Tokens, cell_count: usize) -> Self {
+    pub fn with_cells(code: &str, cell_count: usize) -> Self {
         Self {
-            tokens: Self::preprocess_tokens(tokens),
+            tokens: Self::preprocess_tokens(lex(code.to_string())),
             compiled_source: Self::init(cell_count),
             cell_count,
             loop_idx: 0,
@@ -47,30 +47,41 @@ impl Compiler {
     }
 
     fn compile(&mut self) {
-        for (token, occur) in self.tokens.iter() {
-            self.compiled_source += match token {
-                Token::Increment  => self.increment(*occur),
-                Token::Decrement  => self.decrement(*occur),
-                Token::Input      => self.input(),
-                Token::Output     => self.output(),
-                Token::ShiftLeft  => self.shift_left(),
-                Token::ShiftRight => self.shift_right(),
+        for (token, occur) in self.tokens.clone().iter() {
+            match token {
+                Token::Increment  => self.increment(*occur as u8),
+                Token::Decrement  => self.decrement(*occur as u8),
+                Token::Input      => (0..*occur).for_each(|_| self.input()),
+                Token::Output     => (0..*occur).for_each(|_| self.output()),
+                Token::ShiftLeft  => self.shift_left(*occur),
+                Token::ShiftRight => self.shift_right(*occur),
 
                 Token::LoopStart  => { self.loop_idx += 1; self.loop_start() },
                 Token::LoopEnd    => self.loop_end(),
 
                 _ => unreachable!(),
-            }.as_str();
+            }
         }
 
-        self.compiled_source += self.error_messages().as_str();
+        self.error_messages();
     }
 
-    fn preprocess_tokens(tokens: Tokens) -> Vec<(Token, u8)> {
+    fn preprocess_tokens(tokens: Tokens) -> Vec<(Token, u32)> {
         let mut v = Vec::new();
 
-        for itm in tokens.0.iter() {
-            v.push((*itm, 1));
+        if !tokens.0.is_empty() {
+            v.push((*tokens.0.first().unwrap(), 1));
+
+            for itm in tokens.0.clone().iter().skip(1) {
+                let last = v.last_mut().unwrap();
+
+                if *itm == last.0 {
+                    last.1 += 1;
+                    continue;
+                }
+
+                v.push((*itm, 1));
+            }
         }
 
         v
@@ -117,8 +128,8 @@ _start:
         )
     }
 
-    fn error_messages(&self) -> String {
-        r#"
+    fn error_messages(&mut self) {
+        self.compiled_source += r#"
 exit_program:
     mov rax, 60
     mov rdi, 0
@@ -150,34 +161,33 @@ label_err_msg_first:
     mov esi, err_msg_first
     mov edx, err_msg_first_len
     syscall
-    jmp exit_program"#
-            .to_string()
+    jmp exit_program"#;
     }
 
-    fn shift_right(&self) -> String {
-        format!(
+    fn shift_right(&mut self, i: u32) {
+        self.compiled_source += format!(
             r#"
     ;; ---- Shift Right ----
-    cmp edx, {}
+    cmp edx, {0}
     jz label_err_msg_last
-    add ebx, 1
-    add edx, 1"#,
-            self.cell_count
-        )
+    add ebx, {1}
+    add edx, {1}"#,
+            self.cell_count, i
+        ).as_str();
     }
 
-    fn shift_left(&self) -> String {
-        r#"
+    fn shift_left(&mut self, i: u32) {
+        self.compiled_source += format!(
+            r#"
     ;; ---- Shift Left ----
     cmp edx, 0
     jz label_err_msg_first
-    sub ebx, 1
-    sub edx, 1"#
-            .to_string()
+    sub ebx, {0}
+    sub edx, {0}"#, i).as_str();
     }
 
-    fn increment(&self, i: u8) -> String {
-        format!(
+    fn increment(&mut self, i: u8) {
+        self.compiled_source += format!(
             r#"
     ;; ---- Increment ----
     mov al, byte [ebx]
@@ -186,11 +196,11 @@ label_err_msg_first:
     add al, {}
     mov byte [ebx], al"#,
             i
-        )
+        ).as_str();
     }
 
-    fn decrement(&self, i: u8) -> String {
-        format!(
+    fn decrement(&mut self, i: u8) {
+        self.compiled_source += format!(
             r#"
     ;; ---- Decrement ----
     mov al, byte [ebx]
@@ -199,47 +209,44 @@ label_err_msg_first:
     sub al, {}
     mov byte [ebx], al"#,
             i
-        )
+        ).as_str();
     }
 
-    fn loop_start(&self) -> String {
-        format!(
+    fn loop_start(&mut self) {
+        self.compiled_source += format!(
             r#"
     ;; ---- Loop Start ----
     movzx ecx, byte [ebx]
 init_loop_{}:
     push rcx"#,
             self.loop_idx
-        )
+        ).as_str();
     }
 
-    fn loop_end(&self) -> String {
-        format!(
-            r#"
+    fn loop_end(&mut self) {
+        self.compiled_source += format!(r#"
    ;; ---- Loop End ----
     pop rcx
     dec rcx
     cmp rcx, 0
     jnz init_loop_{}"#,
             self.loop_idx
-        )
+        ).as_str();
     }
 
-    fn output(&self) -> String {
-        r#"
+    fn output(&mut self) {
+        self.compiled_source += r#"
     ;; ---- Print Char ----
     mov al, byte [ebx]
     mov byte [buffer], al
-    call putChar"#
-            .to_string()
+    call putChar"#;
     }
 
-    fn input(&self) -> String {
-        r#"
+    fn input(&mut self) {
+        self.compiled_source += r#"
     ;; ---- Get Char ----
     call getChar
     mov al, byte [buffer]
-    mov byte [ebx], al"#
-            .to_string()
+    mov byte [ebx], al"#;
     }
 }
