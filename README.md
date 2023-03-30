@@ -1,5 +1,9 @@
 # Brainfuck compiler
-An actual brainfuck compiler written in rust
+An actual **blazingly fast** brainfuck compiler/interpreter written in rust
+
+## Todo:
+- [x] cli interface
+- [ ] add support for compile-time execution
 
 ### Installation:
 
@@ -50,9 +54,9 @@ File: hello.bf
 
 #### Compiler:
 
-``` shell
-$ bfc -cp hello.bf -o hello
-$ ./hello
+```
+$ bfc -cp hello.bf -o hello_world
+$ ./hello_world
 Hello World
 
 # If you want to see the assembly output
