@@ -1,1 +1,4 @@
 /target
+output.asm
+output
+output.o
