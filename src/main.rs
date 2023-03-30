@@ -106,27 +106,27 @@ fn main() {
                 .save_assembly_output(&output_asm_file)
                 .expect("Failed to save the output file `output.asm`");
 
-            process::Command::new("nasm")
-                .arg("-felf64")
-                .arg(&output_asm_file)
-                .spawn()
-                .unwrap()
-                .wait()
-                .unwrap();
+            if !output_asm {
+                process::Command::new("nasm")
+                    .arg("-felf64")
+                    .arg(&output_asm_file)
+                    .spawn()
+                    .unwrap()
+                    .wait()
+                    .unwrap();
 
-            process::Command::new("ld")
-                .arg("-o")
-                .arg(&output_file_path)
-                .arg(format!("{}.o", output_file_path))
-                .spawn()
-                .unwrap()
-                .wait()
-                .unwrap();
+                process::Command::new("ld")
+                    .arg("-o")
+                    .arg(&output_file_path)
+                    .arg(format!("{}.o", output_file_path))
+                    .spawn()
+                    .unwrap()
+                    .wait()
+                    .unwrap();
 
-            fs::remove_file(format!("{output_file_path}.o")).expect("Failed to delete object file");
-            (!output_asm).then(|| {
+                fs::remove_file(format!("{output_file_path}.o")).expect("Failed to delete object file");
                 fs::remove_file(output_asm_file).expect("Failed to delete assembly output file")
-            });
+            }
 
             run.then(|| {
                 process::Command::new(fs::canonicalize(output_file_path.as_str()).unwrap())
