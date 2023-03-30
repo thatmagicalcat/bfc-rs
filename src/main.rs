@@ -1,7 +1,6 @@
 use std::process;
 use std::{fs, io::Read};
 
-use brainfuck_compiler as bfc;
 use bfc::compiler::Compiler;
 use bfc::interpreter::Interpreter;
 
