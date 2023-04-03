@@ -26,22 +26,19 @@ fn main() {
         .subcommand(
             Command::new("compile")
                 .short_flag('c')
-                .long_flag("compile")
                 .about(format!("Compile brainfuck code, default output file name: `{0}` and `{0}.asm` (will be deleted)", DEFAULT_OUTPUT))
                 .arg_required_else_help(true)
+                .arg(
+                    Arg::new("file path")
+                        .action(ArgAction::Set)
+                        .required(true)
+                )
                 .arg(
                     Arg::new("output to assembly")
                         .action(ArgAction::SetTrue)
                         .required(false)
                         .long("asm")
                         .short('s')
-                )
-                .arg(
-                    Arg::new("file path")
-                        .action(ArgAction::Set)
-                        .required(true)
-                        .long("path")
-                        .short('p'),
                 )
                 .arg(
                     Arg::new("compile and run")
@@ -61,15 +58,12 @@ fn main() {
         .subcommand(
             Command::new("interpret")
                 .short_flag('i')
-                .long_flag("interpret")
                 .about("Interpret brainfuck code")
                 .arg_required_else_help(true)
                 .arg(
                     Arg::new("file path")
                         .required(true)
                         .action(ArgAction::Set)
-                        .long("path")
-                        .short('p'),
                 ),
         );
 
