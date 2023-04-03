@@ -20,9 +20,9 @@ An actual brainfuck compiler
 Usage: bfc [OPTIONS] <COMMAND>
 
 Commands:
-  compile, -c, --compile      Compile brainfuck code, default output file name: `output` and `output.asm` (will be deleted)
-  interpret, -i, --interpret  Interpret brainfuck code
-  help                        Print this message or the help of the given subcommand(s)
+  compile, -c    Compile brainfuck code, default output file name: `output` and `output.asm` (will be deleted)
+  interpret, -i  Interpret brainfuck code
+  help           Print this message or the help of the given subcommand(s)
 
 Options:
       --cellcount <cell count>  [default: 2000]
@@ -55,7 +55,7 @@ File: hello.bf
 #### Compiler:
 
 ```
-$ bfc -cp hello.bf -o hello_world
+$ bfc -c hello.bf -o hello_world          # you can add `-r` flag to run after compilation
 $ ./hello_world
 Hello World
 
