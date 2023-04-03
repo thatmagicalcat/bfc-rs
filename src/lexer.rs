@@ -1,5 +1,3 @@
-use logos::{Lexer, Logos};
-
 use super::report_lex_error;
 
 #[derive(Debug, Clone)]
@@ -27,35 +25,43 @@ pub(crate) fn lex(input: String) -> Tokens {
     )
 }
 
-#[derive(Logos, Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub(crate) enum Token {
-    #[token("<")]
     ShiftLeft,
-
-    #[token(">")]
     ShiftRight,
-
-    #[token("[")]
     LoopStart,
-
-    #[token("]")]
     LoopEnd,
-
-    #[token("+")]
     Increment,
-
-    #[token("-")]
     Decrement,
-
-    #[token(".")]
     Output,
-
-    #[token(",")]
     Input,
-
-    #[regex(r"[ \t\n\f\r]+")]
     Skip,
-
-    #[error]
     Error,
+}
+
+impl Token {
+    pub fn lexer(input: &str) -> Vec<Self> {
+        use Token::*;
+
+        let mut tokens = Vec::new();
+
+        for ch in input.chars() {
+            let t = match ch {
+                '<' => ShiftLeft,
+                '>' => ShiftRight,
+                '+' => Increment,
+                '-' => Decrement,
+                '[' => LoopStart,
+                ']' => LoopEnd,
+                '.' => Output,
+                ',' => Input,
+                x if x.is_whitespace() => Skip,
+                _ => Error,
+            };
+
+            (t != Skip).then(|| tokens.push(t));
+        }
+
+        tokens
+    }
 }
