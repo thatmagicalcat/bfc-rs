@@ -22,7 +22,7 @@ pub struct Interpreter {
 impl Interpreter {
     /// Creates a new instance of Interpreter, cell count is: DEFAULT_CELL_COUNT
     pub fn new(code: &str) -> Self {
-        let mut v = Vec::with_capacity(DEFAULT_CELL_COUNT);
+        let mut v = vec![0; DEFAULT_CELL_COUNT];
         v.resize(v.capacity(), 0);
 
         Self {
@@ -36,8 +36,7 @@ impl Interpreter {
 
     /// cells with custom capacity
     pub fn with_cells(code: &str, cell_count: usize) -> Self {
-        let mut v = Vec::with_capacity(cell_count);
-        v.resize(cell_count, 0);
+        let mut v = vec![0; cell_count];
 
         Self {
             tokens: lex(code.to_string()),
@@ -66,8 +65,7 @@ impl Interpreter {
                 _ => unreachable!()
             };
 
-            if res.is_err() {
-                let error = res.unwrap_err();
+            if let Err(error) = res {
                 let error_msg = error.0;
                 let error_char_index = error.1;
 
@@ -128,7 +126,7 @@ impl Interpreter {
 
         let mut buffer = String::new();
 
-        if let Err(_) = stdin().read_line(&mut buffer) {
+        if stdin().read_line(&mut buffer).is_err() {
             return Err(("Failed to get user input", self.ptr));
         }
 

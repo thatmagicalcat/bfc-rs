@@ -72,15 +72,15 @@ impl Compiler {
         if !tokens.0.is_empty() {
             v.push((*tokens.0.first().unwrap(), 1));
 
-            for itm in tokens.0.clone().iter().skip(1) {
+            for itm in tokens.0.into_iter().skip(1) {
                 let last = v.last_mut().unwrap();
 
-                if *itm == last.0 {
+                if itm == last.0 {
                     last.1 += 1;
                     continue;
                 }
 
-                v.push((*itm, 1));
+                v.push((itm, 1));
             }
         }
 

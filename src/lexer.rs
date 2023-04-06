@@ -20,7 +20,7 @@ pub(crate) fn lex(input: String) -> Tokens {
     Tokens(
         l.iter()
             .filter(|&&x| x != Token::Skip)
-            .map(|x| *x)
+            .copied()
             .collect::<Vec<_>>(),
     )
 }

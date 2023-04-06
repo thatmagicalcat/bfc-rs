@@ -7,7 +7,7 @@ use bfc::interpreter::Interpreter;
 use clap::{Arg, ArgAction, Command};
 
 fn main() {
-    const DEFAULT_OUTPUT: &'static str = "output";
+    const DEFAULT_OUTPUT: &str = "output";
 
     let cmd = Command::new("Brainfuck compiler")
         .about("An actual brainfuck compiler")
